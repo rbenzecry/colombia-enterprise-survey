@@ -60,11 +60,16 @@ enterprise_survey <- enterprise_survey %>%
                 .fns = function(x) case_when(x == 2 ~ 0,
                                              x < 0 ~ NA,
                                              TRUE ~ x))) %>% 
-  mutate(industry_sector = to_factor(industry_sector))
+  mutate(across(.cols = c("sample_region", "industry_sector"),
+                .fns = to_factor)) %>% 
+  
+  mutate(informal_practices_obstacle = ifelse(informal_practices_obstacle < 0,
+                                              yes = NA, no = informal_practices_obstacle))
   
   
 
-# EXPLORATION -------------------------------------------------------------
+
+# PLOTS INFORMALITY -------------------------------------------------------
 
 # Formally registered when started operating
 enterprise_survey %>% 
@@ -87,35 +92,9 @@ enterprise_survey %>%
   labs(x = "Industry", y = "% registered when started")
 
 
-
-
-  
-
-# PLOTS INFORMALITY -------------------------------------------------------
-
-# Formally registered when started operating
-enterprise_survey %>% 
-  # Calculate percentages by industry
-  group_by(industry_sector) %>% 
-  summarise(across(.cols = c("registered_start", "informal_competition"),
-                   .fns = function(x) weighted.mean(x, weight = wmedian, na.rm = T))) %>% 
-  ungroup() %>% 
-  
-  # Plot
-  ggplot(aes(x = industry_sector, 
-             y = (1 - registered_start)*100)) +
-  
-  geom_col(aes(fill = industry_sector)) +
-  custom_theme() +
-  # Rotate x-axis labels
-  theme(
-    axis.text.x = element_text(angle = 270, hjust = 1)
-  ) +
-  labs(x = "Industry", y = "% registered when started")
-
 # PLOTS OBSTACLES ---------------------------------------------------------
 
-# Formally registered when started operating
+# Facing informal competition
 enterprise_survey %>% 
   # Calculate percentages by industry
   group_by(industry_sector) %>% 
@@ -136,29 +115,105 @@ enterprise_survey %>%
   labs(x = "Industry", y = "% facing informal competition")
 
 
-# Obstacle
+
+# BOXPLOTS
+# Degree of obstacle
 enterprise_survey %>% 
-  # Calculate percentages by industry
-  group_by(industry_sector) %>% 
-  summarise(across(.cols = c("registered_start", "informal_competition"),
-                   .fns = function(x) weighted.mean(x, weight = wmedian, na.rm = T))) %>% 
-  ungroup() %>% 
   
   # Plot
   ggplot(aes(x = industry_sector, 
-             y = informal_competition*100)) +
+             y = informal_practices_obstacle)) +
   
-  geom_col(aes(fill = industry_sector)) +
+  geom_jitter(aes(col = industry_sector), alpha = 0.3, stroke = 0) +
+  
+  geom_boxplot(aes(fill = industry_sector), alpha = 0.5) +
+  
+  ylim(0, 5) +
   custom_theme() +
   # Rotate x-axis labels
   theme(
     axis.text.x = element_text(angle = 270, hjust = 1)
   ) +
-  labs(x = "Industry", y = "% facing informal competition")
+  labs(x = "Industry", y = "degree of obstacle")
+
+
+
+
+# HISTOGRAM
+# Degree of obstacle per sector
+enterprise_survey %>%
+  filter(!is.na(informal_practices_obstacle)) %>% 
+  
+  # Plot
+  ggplot(aes(informal_practices_obstacle)) +
+  
+  geom_density(aes(fill = industry_sector), alpha = 0.5) +
+  facet_grid(industry_sector~.) +
+  
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  )
+
+
+
+# PLOTS PER REGION --------------------------------------------------------
+
+
+# BOXPLOTS
+# Degree of obstacle
+enterprise_survey %>% 
+  
+  # Plot
+  ggplot(aes(x = sample_region, 
+             y = informal_practices_obstacle)) +
+  
+  geom_jitter(aes(col = sample_region), alpha = 0.3, stroke = 0) +
+  
+  geom_boxplot(aes(fill = sample_region), alpha = 0.5) +
+  
+  ylim(0, 5) +
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  ) +
+  labs(x = "Region", y = "degree of obstacle")
+
+
+
+
+# HISTOGRAM
+# Degree of obstacle per sector
+enterprise_survey %>%
+  filter(!is.na(informal_practices_obstacle)) %>% 
+  
+  # Plot
+  ggplot(aes(informal_practices_obstacle)) +
+  
+  geom_density(aes(fill = sample_region), alpha = 0.5) +
+  facet_grid(sample_region~.) +
+  
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  )
 
 
 # EXPORT ------------------------------------------------------------------
 
+aux <- enterprise_survey %>% 
+  filter(sample_region == "Bogota")
+
+aux %>% 
+  ggplot(aes(informal_practices_obstacle)) +
+  geom_histogram(fill = "midnightblue", alpha = 0.5, width = 4) +
+  custom_theme()
+
+enterprise_survey$informal_practices_obstacle %>% attr('labels')
+enterprise_survey$sample_region %>% attr('labels')
 
 # -------------------------------------------------------------------------
 
