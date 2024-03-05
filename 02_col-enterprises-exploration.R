@@ -80,7 +80,7 @@ enterprise_survey %>%
   ungroup() %>% 
   
   # Plot
-  ggplot(aes(x = reorder(industry_sector, registered_start), 
+  ggplot(aes(x = industry_sector, 
              y = (1 - registered_start)*100)) +
   
   geom_col(aes(fill = industry_sector)) +
@@ -91,8 +91,6 @@ enterprise_survey %>%
   ) +
   labs(x = "Industry", y = "% registered when started")
 
-
-# PLOTS OBSTACLES ---------------------------------------------------------
 
 # Facing informal competition
 enterprise_survey %>% 
@@ -115,6 +113,7 @@ enterprise_survey %>%
   labs(x = "Industry", y = "% facing informal competition")
 
 
+# PLOTS OBSTACLES ---------------------------------------------------------
 
 # BOXPLOTS
 # Degree of obstacle
