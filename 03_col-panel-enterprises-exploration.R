@@ -122,7 +122,142 @@ panel_col %>%
   labs(x = "Industry", y = "degree of obstacle")
 
 
+
+# HISTOGRAM
+# Degree of obstacle per sector
+panel_col %>%
+  filter(!is.na(informal_practices_obstacle)) %>% 
   
+  # Plot
+  ggplot(aes(informal_practices_obstacle)) +
+  
+  geom_density(aes(fill = as.factor(year)), alpha = 0.5) +
+  facet_grid(industry_sector~.) +
+  
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  )
+
+
+#
+panel_col %>%
+  # filter(!is.na(informal_practices_obstacle)) %>% 
+  
+  # Plot
+  ggplot(aes(year, 
+             informal_practices_obstacle)) +
+  
+  geom_jitter(aes(fill = industry_sector), alpha = 0.5) +
+  # facet_grid(industry_sector~.) +
+  
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  )
+
+
+# AVERAGE -----------------------------------------------------------------
+
+
+# Average informality by sector
+panel_col %>% 
+  group_by(year, industry_sector) %>% 
+  summarise(informality_obstacle = weighted.mean(informal_practices_obstacle, 
+                                                 wmedian, na.rm = T)) %>% 
+  ungroup() %>% 
+  
+  ggplot(aes(x = year, 
+            y = informality_obstacle,
+            col = industry_sector)) +
+  
+  geom_point(size = 1) +
+  geom_line(linewidth = 0.8) +
+  geom_line(linewidth = 3, alpha = 0.3) +
+  
+  ylim(0, 5) +
+  
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  )
+
+  
+  
+
+# Average informality by region
+panel_col %>% 
+  group_by(year, sample_region) %>% 
+  summarise(informality_obstacle = weighted.mean(informal_practices_obstacle, 
+                                                 wmedian, na.rm = T)) %>% 
+  ungroup() %>% 
+  
+  ggplot(aes(x = year, 
+             y = informality_obstacle,
+             col = sample_region)) +
+  
+  geom_point(size = 1) +
+  geom_line(linewidth = 0.8) +
+  geom_line(linewidth = 3, alpha = 0.3) +
+  
+  ylim(0, 5) +
+  
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  )  
+
+
+
+# Average informality by region
+panel_col %>% 
+  group_by(year) %>% 
+  summarise(informality_obstacle = weighted.mean(informal_practices_obstacle, 
+                                                 wmedian, na.rm = T)) %>% 
+  ungroup() %>% 
+  
+  ggplot(aes(x = year, 
+             y = informality_obstacle)) +
+  
+  geom_point(size = 1) +
+  geom_line(linewidth = 0.8) +
+  geom_line(linewidth = 3, alpha = 0.3) +
+  
+  ylim(0, 5) +
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  )  
+
+
+# By firm size
+panel_col %>% 
+  mutate(sample_size = as.factor(sample_size)) %>% 
+  group_by(year, sample_size) %>% 
+  summarise(informality_obstacle = weighted.mean(informal_practices_obstacle, 
+                                                 wmedian, na.rm = T)) %>% 
+  ungroup() %>% 
+  
+  ggplot(aes(x = year, 
+             y = informality_obstacle,
+             col = sample_size)) +
+  
+  geom_point(size = 1) +
+  geom_line(linewidth = 0.8) +
+  geom_line(linewidth = 3, alpha = 0.3) +
+  
+  ylim(0, 5) +
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  )  
+
 # -------------------------------------------------------------------------
 
 # vector_new <- c("des", "a4a", "a6a", "a2", "a3b", "_2010_2017_a3", "a4b", "a0", "a3a", "a6b", "a7", 
