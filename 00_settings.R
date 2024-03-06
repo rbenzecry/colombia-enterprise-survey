@@ -10,7 +10,7 @@ library(ggrounded)
 library(gridExtra)
 library(labelled)
 
-rm(list = ls())
+# rm(list = ls())
 
 # FUNCTIONS ---------------------------------------------------------------
 
