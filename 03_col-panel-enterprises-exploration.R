@@ -72,7 +72,8 @@ panel_col$informal_contracts_2010_17 %>% attr('labels')
 panel_col$sample_region %>% attr('labels')
 
 
-# PLOTS INFORMALITY -------------------------------------------------------
+
+# INITIALLY REGISTERED ----------------------------------------------------
 
 # Formally registered when started operating
 panel_col %>% 
@@ -98,8 +99,57 @@ panel_col %>%
   ) +
   labs(x = "Industry", y = "% registered when started")
 
+
+# INFORMAL COMPETITION ----------------------------------------------------
+
+panel_col %>% 
+  # Calculate percentages by industry
+  group_by(year) %>% 
+  summarise(across(.cols = c("registered_start", "informal_competition"),
+                   .fns = function(x) weighted.mean(x, weight = wmedian, na.rm = T))) %>% 
+  ungroup() %>% 
   
-# PLOTS OBSTACLES ---------------------------------------------------------
+  # Plot
+  ggplot(aes(x = year, 
+             y = (1 - informal_competition)*100)) +
+  
+  geom_point(size = 1) +
+  geom_line(linewidth = 0.8) +
+  geom_line(linewidth = 3, alpha = 0.3) +
+  
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  ) +
+  labs(x = "Year", y = "% facing informal competition")
+
+
+# BY SECTOR
+panel_col %>% 
+  # Calculate percentages by industry
+  group_by(year, industry_sector) %>% 
+  summarise(across(.cols = c("registered_start", "informal_competition"),
+                   .fns = function(x) weighted.mean(x, weight = wmedian, na.rm = T))) %>% 
+  ungroup() %>% 
+  
+  # Plot
+  ggplot(aes(x = year, 
+             y = (1 - informal_competition)*100, 
+             col = industry_sector)) +
+  
+  geom_point(size = 1) +
+  geom_line(linewidth = 0.8) +
+  geom_line(linewidth = 3, alpha = 0.3) +
+  
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  ) +
+  labs(x = "Year", y = "% facing informal competition")
+
+# INFORMALITY OBSTACLE ----------------------------------------------------
 
 # BOXPLOTS
 # Degree of obstacle
@@ -162,7 +212,29 @@ panel_col %>%
 # AVERAGE -----------------------------------------------------------------
 
 
-# Average informality by sector
+# Average informality obstacle
+panel_col %>% 
+  group_by(year) %>% 
+  summarise(informality_obstacle = weighted.mean(informal_practices_obstacle, 
+                                                 wmedian, na.rm = T)) %>% 
+  ungroup() %>% 
+  
+  ggplot(aes(x = year, 
+             y = informality_obstacle)) +
+  
+  geom_point(size = 1) +
+  geom_line(linewidth = 0.8) +
+  geom_line(linewidth = 3, alpha = 0.3) +
+  
+  ylim(0, 5) +
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  )  
+
+
+# BY SECTOR
 panel_col %>% 
   group_by(year, industry_sector) %>% 
   summarise(informality_obstacle = weighted.mean(informal_practices_obstacle, 
@@ -188,7 +260,7 @@ panel_col %>%
   
   
 
-# Average informality by region
+# BY REGION
 panel_col %>% 
   group_by(year, sample_region) %>% 
   summarise(informality_obstacle = weighted.mean(informal_practices_obstacle, 
@@ -213,29 +285,7 @@ panel_col %>%
 
 
 
-# Average informality by region
-panel_col %>% 
-  group_by(year) %>% 
-  summarise(informality_obstacle = weighted.mean(informal_practices_obstacle, 
-                                                 wmedian, na.rm = T)) %>% 
-  ungroup() %>% 
-  
-  ggplot(aes(x = year, 
-             y = informality_obstacle)) +
-  
-  geom_point(size = 1) +
-  geom_line(linewidth = 0.8) +
-  geom_line(linewidth = 3, alpha = 0.3) +
-  
-  ylim(0, 5) +
-  custom_theme() +
-  # Rotate x-axis labels
-  theme(
-    axis.text.x = element_text(angle = 270, hjust = 1)
-  )  
-
-
-# By firm size
+# BY FIRM SIZE
 panel_col %>% 
   mutate(sample_size = as.factor(sample_size)) %>% 
   group_by(year, sample_size) %>% 
