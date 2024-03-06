@@ -1,6 +1,7 @@
 
-source("00_settings.R")
+# rm(list = ls())
 
+source("00_settings.R")
 
 # DATA --------------------------------------------------------------------
 
@@ -8,6 +9,8 @@ peru_panel <- read_dta("Data/Peru-panel-data/Peru_2006_2010_2017.dta")
 
 peru_2023 <- read_dta("Data/Peru-2023-full-data/Peru-2023-full-data.dta")
 
+ven_peru <- read_excel("Data/ven-immigration-department-COL-PER.xlsx",
+                       sheet = "per-enpove")
 
 # SET UP ------------------------------------------------------------------
 
@@ -152,15 +155,51 @@ peru_2023 <- peru_2023 %>%
 
 
 
+# VENEZUELAN MIGRANTS -----------------------------------------------------
+
+
+ven_peru <- ven_peru %>% 
+  select("City",
+         "percent_2018", "percent_2022",
+         "total_2018", "total_2022") %>% 
+  slice(1:10) %>%
+  
+  # Long format all
+  pivot_longer(cols = -City,
+               names_to = "variable",
+               values_to = "values") %>% 
+  separate(col = "variable", 
+           into = c("var", "year"),
+           sep = "_") %>% 
+  
+  # Put the variables back in the columns
+  pivot_wider(names_from = var,
+              values_from = values) %>% 
+  rename(share = percent, 
+         ven_population = total) %>% 
+  
+  # We are going to create a variable of year to match the data with the survey
+  mutate(year_survey = ifelse(year == 2022,
+                              yes = 2023, no = 2017),
+         
+         # And modify the City to match the survey
+         City = ifelse(City == "Lima y Callao",
+                       yes = "Lima", no = City))
+
+
 # CHECK -------------------------------------------------------------------
 
+# Economic sector
 peru_panel$industry_sector %>% attr('labels')
 peru_2023$industry_sector %>% attr('labels')
 
 peru_panel$screener_sector %>% attr('labels')
 peru_2023$screener_sector %>% attr('labels')
 
-peru_2023$sample_region %>% attr('labels')
+# Informality variables
+peru_2023$informal_competition %>% attr('labels')
+peru_2023$informal_competition %>% attr('label')
+peru_2023$informal_practices_obstacle %>% attr('labels')
 
 # MERGE DATASETS ----------------------------------------------------------
 
@@ -173,11 +212,20 @@ peru_all <- bind_rows(peru_panel, peru_2023) %>%
                                              TRUE ~ x))) %>%
   
   mutate(informal_practices_obstacle = ifelse(informal_practices_obstacle < 0,
-                                              yes = NA, no = informal_practices_obstacle))
-
+                                              yes = NA, no = informal_practices_obstacle)) %>% 
+  
+  # Joining with the data frame of migration but only keeping a specific number of columns
+  left_join(select(ven_peru, 
+                   City, year_survey, share, ven_population), 
+            
+            by = c("sample_region" = "City",
+                   "year" = "year_survey")) %>% 
+  
+  rename("share_ven_migrants" = "share",
+         "ven_migrants" = "ven_population")
   
 
-
+  
 # EXPORT ------------------------------------------------------------------
 
 
