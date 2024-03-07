@@ -20,7 +20,8 @@ p_sector_registry <- peru_all %>%
   ggplot(aes(x = reorder(industry_sector, informal_competition), 
              y = (1 - registered_start)*100)) +
   
-  geom_col(aes(fill = industry_sector), alpha = 0.85) +
+  geom_col(aes(fill = -informal_competition)) +
+  # scale_fill_brewer(palette="Dark2") +
   
   custom_theme() +
   # Rotate x-axis labels
@@ -28,7 +29,8 @@ p_sector_registry <- peru_all %>%
     legend.position = "none",
     axis.text.x = element_text(angle = 270, hjust = 1)
   ) +
-  labs(x = "Industry", y = "% registered when started")
+  labs(subtitle =  "Q: Was Establishment Formally Registered When It Began Operations?",
+       x = "Sector", y = "% registered when started")
 
 p_sector_registry
 
@@ -47,7 +49,7 @@ p_sector_informal <- peru_all %>%
   ggplot(aes(x = reorder(industry_sector, informal_competition), 
              y = informal_competition*100)) +
   
-  geom_col(aes(fill = industry_sector), alpha = 0.85) +
+  geom_col(aes(fill = -informal_competition)) +
   
   custom_theme() +
   # Rotate x-axis labels
@@ -55,7 +57,8 @@ p_sector_informal <- peru_all %>%
     legend.position = "none",
     axis.text.x = element_text(angle = 270, hjust = 1)
   ) +
-  labs(x = "Industry", y = "% face informal competition")
+  labs(subtitle = "Q: Does This Establishment Compete Against Unregistered Or Informal Firms?",
+       x = "Sector", y = "% face informal competition")
 
 p_sector_informal 
 
@@ -68,7 +71,7 @@ grid.arrange( p_sector_informal, p_sector_registry,
 
 
 # REGISTRATION
-peru_all %>%
+p_region_registry <- peru_all %>%
   filter(year == 2023) %>%  
   # Calculate percentages by region
   group_by(sample_region) %>% 
@@ -77,10 +80,11 @@ peru_all %>%
   ungroup() %>% 
   
   # Plot
-  ggplot(aes(x = sample_region, 
+  ggplot(aes(x = reorder(sample_region, informal_competition), 
              y = (1 - registered_start)*100)) +
   
-  geom_col(aes(fill = sample_region)) +
+  geom_col(aes(fill = informal_competition)) +
+  scale_fill_gradient(low = "purple", high = "#301934") +
   
   custom_theme() +
   # Rotate x-axis labels
@@ -88,9 +92,44 @@ peru_all %>%
     legend.position = "none",
     axis.text.x = element_text(angle = 270, hjust = 1)
   ) +
-  labs(x = "Region", y = "% registered when started")
+  labs(subtitle =  "Q: Was Establishment Formally Registered When It Began Operations?",
+       x = "Sector", y = "% registered when started")
+
+p_region_registry
 
 
+# INFORMAL COMPETITION
+p_region_informal <- peru_all %>%
+  filter(year == 2023) %>%  
+  
+  # Calculate percentages by industry
+  group_by(sample_region) %>% 
+  summarise(across(.cols = c("registered_start", "informal_competition"),
+                   .fns = function(x) weighted.mean(x, weight = wmedian, na.rm = T))) %>% 
+  ungroup() %>% 
+  
+  # Plot
+  ggplot(aes(x = reorder(sample_region, informal_competition), 
+             y = informal_competition*100)) +
+  
+  geom_col(aes(fill = informal_competition)) +
+  scale_fill_gradient(low = "purple", high = "#301934") +
+  
+  
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  ) +
+  labs(subtitle = "Q: Does This Establishment Compete Against Unregistered Or Informal Firms?",
+       x = "Region", y = "% face informal competition")
+
+p_region_informal 
+
+
+grid.arrange( p_region_informal, p_region_registry,
+              ncol = 2)
 
 # FIRM SIZE ---------------------------------------------------------------
 
