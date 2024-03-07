@@ -10,7 +10,7 @@ peru_panel <- read_dta("Data/Peru-panel-data/Peru_2006_2010_2017.dta")
 peru_2023 <- read_dta("Data/Peru-2023-full-data/Peru-2023-full-data.dta")
 
 ven_peru <- read_excel("Data/ven-immigration-department-COL-PER.xlsx",
-                       sheet = "per-enpove")
+                       sheet = "per-enpove-pop")
 
 # SET UP ------------------------------------------------------------------
 
@@ -45,6 +45,8 @@ peru_panel <- peru_panel %>%
          registration_year = b6b,
          # registered_start = b6a,
          
+         annual_sales = d2,
+         
          informal_competition = e11,
          # "informal_practices_2017" = "_2017_ASCe12",
          # "informal_contracts_2010_17" = "_2010_2017_ASCe14",
@@ -53,7 +55,7 @@ peru_panel <- peru_panel %>%
          
          total_informal_payment = j7b,
          labor_regulations_obstacle = l30a,
-         total_labor_cost_last_fiscal_year = n2a,
+         total_labor_cost_lfy = n2a,
          
          electricity_obstacle = c30a,
          # telecom_obstacle = c30b,
@@ -70,13 +72,26 @@ peru_panel <- peru_panel %>%
          corruption_obstacle = j30f,
          
          courts_obstacle = h30,
-         labor_regulations_obstacle_2 = l30a,
+         # labor_regulations_obstacle_2 = l30a,
          inadequate_workforce_obstacle = l30b) %>% 
   
   # Convert to character to avoid mismatch of labels 
   mutate(across(.cols = c("sample_region", "sample_size",
                           "industry_sector", "screener_sector"),
-                .fns = to_character))
+                .fns = to_character)) %>% 
+  
+  # Difference between start and registration
+  mutate(start_year = ifelse(start_year == -9, 
+                             yes = registration_year, no = start_year),
+         
+         registration_year = ifelse(registration_year == -9 | is.na(registration_year),
+                                    yes = start_year, no = registration_year),
+         
+         dif_register = registration_year - start_year) %>% 
+  
+  mutate(dif_register = ifelse(dif_register < 0,
+                               yes = 0, no = dif_register),
+         registered_start = as.numeric(dif_register == 0))
 
   
 # 2023 
@@ -120,6 +135,8 @@ peru_2023 <- peru_2023 %>%
          registration_year = b6b,
          # registered_start = b6a,
          
+         annual_sales = d2,
+         
          informal_competition = e11,
          # "informal_practices_2017" = "_2017_ASCe12",
          # "informal_contracts_2010_17" = "_2010_2017_ASCe14",
@@ -128,7 +145,7 @@ peru_2023 <- peru_2023 %>%
          
          total_informal_payment = j7b,
          labor_regulations_obstacle = l30a,
-         total_labor_cost_last_fiscal_year = n2a,
+         total_labor_cost_lfy = n2a,
          
          electricity_obstacle = c30a,
          # telecom_obstacle = c30b,
@@ -145,13 +162,32 @@ peru_2023 <- peru_2023 %>%
          corruption_obstacle = j30f,
          
          courts_obstacle = h30,
-         labor_regulations_obstacle_2 = l30a,
+         # labor_regulations_obstacle_2 = l30a,
          inadequate_workforce_obstacle = l30b) %>% 
   
   # Convert to character to avoid mismatch of labels 
   mutate(across(.cols = c("sample_region", "sample_size",
                           "industry_sector", "screener_sector"),
-                .fns = to_character))
+                .fns = to_character)) %>% 
+  
+  mutate(industry_sector = ifelse(industry_sector == "Textiles" |
+                                    industry_sector == "Garments",
+                                  yes = "Textiles & Garments", 
+                                  no = industry_sector)) %>% 
+  
+  # Difference between start and registration
+  mutate(start_year = ifelse(start_year == -9, 
+                             yes = registration_year, no = start_year),
+         
+         registration_year = ifelse(registration_year == -9 | is.na(registration_year),
+                                    yes = start_year, no = registration_year),
+         
+         dif_register = registration_year - start_year) %>% 
+  
+  mutate(dif_register = ifelse(dif_register < 0,
+                               yes = 0, no = dif_register),
+         
+         registered_start = as.numeric(dif_register == 0))
 
 
 
@@ -160,8 +196,10 @@ peru_2023 <- peru_2023 %>%
 
 ven_peru <- ven_peru %>% 
   select("City",
-         "percent_2018", "percent_2022",
-         "total_2018", "total_2022") %>% 
+         starts_with("ppop"),
+         starts_with("pmig"),
+         starts_with("migrants_"),
+         starts_with("pop_")) %>% 
   slice(1:10) %>%
   
   # Long format all
@@ -175,17 +213,22 @@ ven_peru <- ven_peru %>%
   # Put the variables back in the columns
   pivot_wider(names_from = var,
               values_from = values) %>% 
-  rename(share = percent, 
-         ven_population = total) %>% 
+  rename(percent_migrants = pmig,
+         percent_pop = ppop,
+         
+         total_population = pop) %>%
+  
+  mutate(year = as.numeric(year)) %>% 
   
   # We are going to create a variable of year to match the data with the survey
-  mutate(year_survey = ifelse(year == 2022,
-                              yes = 2023, no = 2017),
+  mutate(year_survey = case_when(year == 2022 ~ 2023,
+                                 year == 2018 ~ 2017,
+                                 TRUE~year),
          
          # And modify the City to match the survey
          City = ifelse(City == "Lima y Callao",
                        yes = "Lima", no = City))
-
+         
 
 # CHECK -------------------------------------------------------------------
 
@@ -211,23 +254,34 @@ peru_all <- bind_rows(peru_panel, peru_2023) %>%
                                              x < 0 ~ NA,
                                              TRUE ~ x))) %>%
   
-  mutate(informal_practices_obstacle = ifelse(informal_practices_obstacle < 0,
-                                              yes = NA, no = informal_practices_obstacle)) %>% 
+  mutate(across(.cols = ends_with("_obstacle"),
+                .fns = function(x) ifelse(x < 0,
+                                          yes = NA, no = x))) %>% 
+         
+         
+         # informal_practices_obstacle = ifelse(informal_practices_obstacle < 0,
+         #                                      yes = NA, no = informal_practices_obstacle)) %>% 
   
   # Joining with the data frame of migration but only keeping a specific number of columns
   left_join(select(ven_peru, 
-                   City, year_survey, share, ven_population), 
+                   -year), 
             
             by = c("sample_region" = "City",
                    "year" = "year_survey")) %>% 
   
-  rename("share_ven_migrants" = "share",
-         "ven_migrants" = "ven_population")
+  # rename("share_ven_migrants" = "share",
+  #        "ven_migrants" = "ven_population") %>% 
   
+  
+  # Further cleaning of the panel
+  mutate(across(.cols = c("sample_region", "sample_size", 
+                          "industry_sector", "screener_sector"),
+                .fns = as.factor))
 
   
 # EXPORT ------------------------------------------------------------------
 
+write_dta(peru_all, "Tables/peru_2006-2023.dta")
 
 # -------------------------------------------------------------------------
 
