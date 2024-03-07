@@ -2,7 +2,7 @@
 
 # INFORMAL COMPETITION ----------------------------------------------------
 
-peru_all %>% 
+p_panel_informal <- peru_all %>% 
   # Calculate percentages by industry
   group_by(year) %>% 
   summarise(across(.cols = c("informal_competition"),
@@ -11,25 +11,29 @@ peru_all %>%
   
   # Plot
   ggplot(aes(x = year, 
-             y = (1 - informal_competition)*100)) +
+             y = informal_competition*100)) +
   
   geom_point(size = 1) +
   geom_line(linewidth = 0.8) +
   geom_line(linewidth = 3, alpha = 0.3) +
+  
+  ylim(50, 85) +
   
   custom_theme() +
   # Rotate x-axis labels
   theme(
     axis.text.x = element_text(angle = 270, hjust = 1)
   ) +
-  labs(title = "Percentage of firms facing ",
-       subtitle = "Q: Does This Establishment Compete Against Unregistered Or Informal Firms?", 
+  labs(subtitle = "Q: Does This Establishment Compete Against Unregistered Or Informal Firms?", 
        x = "Year", y = "% facing informal competition")
 
-
+p_panel_informal
 
 # By sector
-peru_all %>% 
+p_panel_informal_sector <- peru_all %>% 
+  filter(industry_sector != "Hotels", !is.na(industry_sector),
+         !(industry_sector == "Textiles & Garments" & year == 2006)) %>% 
+
   # Calculate percentages by industry
   group_by(year, industry_sector) %>% 
   summarise(across(.cols = c("informal_competition"),
@@ -38,8 +42,49 @@ peru_all %>%
   
   # Plot
   ggplot(aes(x = year, 
-             y = (1 - informal_competition)*100, 
+             y = informal_competition*100, 
              col = industry_sector)) +
+  
+  geom_point(size = 1) +
+  geom_line(linewidth = 0.8) +
+  geom_line(linewidth = 3, alpha = 0.3) +
+  scale_color_discrete(name = "") +
+  
+  
+  ylim(50, 85) +
+  
+  custom_theme() +
+  # Rotate x-axis labels
+  theme(
+    legend.position = "top",
+    axis.text.x = element_text(angle = 270, hjust = 1)
+  ) +
+  labs(x = "Year", y = "")
+
+p_panel_informal_sector
+
+
+
+# MIXED PLOT
+grid.arrange(p_panel_informal, p_panel_informal_sector,
+             ncol = 2)
+
+
+
+
+# By region
+peru_all %>% 
+  
+  # Calculate percentages by region
+  group_by(year, sample_region) %>% 
+  summarise(across(.cols = c("informal_competition"),
+                   .fns = function(x) weighted.mean(x, weight = wmedian, na.rm = T))) %>% 
+  ungroup() %>% 
+  
+  # Plot
+  ggplot(aes(x = year, 
+             y = informal_competition*100, 
+             col = sample_region)) +
   
   geom_point(size = 1) +
   geom_line(linewidth = 0.8) +
@@ -51,7 +96,6 @@ peru_all %>%
     axis.text.x = element_text(angle = 270, hjust = 1)
   ) +
   labs(x = "Year", y = "% facing informal competition")
-
 
 # INFORMALITY AS AN OBSTACLE ----------------------------------------------
 
